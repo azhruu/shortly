@@ -23,6 +23,13 @@ curl -X POST localhost:3000/api/shorten \
   -d '{"url": "https://example.com/a/very/long/link"}'
 # → {"code":"aB3xK9","shortUrl":"http://localhost:3000/aB3xK9"}
 
+# Create a short link with a custom alias (1-30 chars: letters, digits, _ or -)
+curl -X POST localhost:3000/api/shorten \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://example.com", "alias": "my-link"}'
+# → {"code":"my-link","shortUrl":"http://localhost:3000/my-link"}
+# A taken or invalid alias returns 409 / 400 with an error message.
+
 # Use it (302 redirect, click counted)
 curl -i localhost:3000/aB3xK9
 
@@ -34,7 +41,7 @@ Links persist in `data.json` (override with the `DATA_FILE` env var); the base U
 
 ## Roadmap
 
-Custom aliases → link expiry → per-link stats endpoint → rate limiting. Full plan: [ROADMAP.md](ROADMAP.md).
+Custom aliases → per-link stats endpoint → link expiry → rate limiting. Full plan: [ROADMAP.md](ROADMAP.md).
 
 ## License
 
