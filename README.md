@@ -35,6 +35,11 @@ curl -i localhost:3000/aB3xK9
 
 # List all links with click counts
 curl localhost:3000/api/links
+
+# Stats for one link (clicks, created, last click)
+curl localhost:3000/api/links/aB3xK9
+# → {"code":"aB3xK9","url":"https://example.com/a/very/long/link","shortUrl":"http://localhost:3000/aB3xK9","clicks":1,"created":"...","lastClicked":"..."}
+# Unknown codes return 404 with an error message.
 ```
 
 Links persist in `data.json` (override with the `DATA_FILE` env var); the base URL is set with `BASE_URL`.

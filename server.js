@@ -92,10 +92,27 @@ const server = http.createServer((req, res) => {
     return send(res, 200, Object.entries(links).map(([code, v]) => ({ code, ...v })));
   }
 
+  /* Per-link stats: code, target URL, click count, created time and the
+     time of the most recent click (null if never clicked). */
+  if (req.method === "GET" && url.pathname.startsWith("/api/links/")) {
+    const code = decodeURIComponent(url.pathname.slice("/api/links/".length));
+    const entry = links[code];
+    if (!entry || code.includes("/")) return send(res, 404, { error: "link not found" });
+    return send(res, 200, {
+      code,
+      url: entry.url,
+      shortUrl: `${BASE}/${code}`,
+      clicks: entry.clicks,
+      created: entry.created,
+      lastClicked: entry.lastClicked || null,
+    });
+  }
+
   if (req.method === "GET" && /^\/[A-Za-z0-9_-]{1,30}$/.test(url.pathname)) {
     const entry = links[url.pathname.slice(1)];
     if (!entry) return send(res, 404, { error: "link not found" });
     entry.clicks++;
+    entry.lastClicked = new Date().toISOString();
     persist();
     res.writeHead(302, { Location: entry.url });
     return res.end();
