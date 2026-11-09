@@ -40,6 +40,11 @@ curl localhost:3000/api/links
 curl localhost:3000/api/links/aB3xK9
 # → {"code":"aB3xK9","url":"https://example.com/a/very/long/link","shortUrl":"http://localhost:3000/aB3xK9","clicks":1,"created":"...","lastClicked":"..."}
 # Unknown codes return 404 with an error message.
+
+# Delete a link (its short URL stops redirecting)
+curl -X DELETE localhost:3000/api/links/aB3xK9
+# → {"code":"aB3xK9","deleted":true}
+# Unknown codes return 404 with an error message.
 ```
 
 Links persist in `data.json` (override with the `DATA_FILE` env var); the base URL is set with `BASE_URL`.

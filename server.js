@@ -92,6 +92,16 @@ const server = http.createServer((req, res) => {
     return send(res, 200, Object.entries(links).map(([code, v]) => ({ code, ...v })));
   }
 
+  /* Delete a link: removes it from the store, so its short URL stops
+     redirecting and its stats disappear. Unknown codes get a 404. */
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/links/")) {
+    const code = decodeURIComponent(url.pathname.slice("/api/links/".length));
+    if (!links[code] || code.includes("/")) return send(res, 404, { error: "link not found" });
+    delete links[code];
+    persist();
+    return send(res, 200, { code, deleted: true });
+  }
+
   /* Per-link stats: code, target URL, click count, created time and the
      time of the most recent click (null if never clicked). */
   if (req.method === "GET" && url.pathname.startsWith("/api/links/")) {
