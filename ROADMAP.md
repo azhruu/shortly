@@ -6,7 +6,7 @@ Each item lands as one complete, tested change.
 - [x] Custom aliases (POST with preferred code, clash handling)
 - [x] Per-link stats endpoint (GET /api/links/:code)
 - [x] DELETE /api/links/:code
-- [ ] Link expiry (optional expiresAt on create, 410 after expiry)
+- [x] Link expiry (optional expiresAt on create, 410 after expiry)
 - [ ] Input hardening: max URL length, body size limit
 - [ ] Basic rate limiting per IP on POST
 - [ ] Automated endpoint tests (node:test)

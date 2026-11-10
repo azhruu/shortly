@@ -45,6 +45,15 @@ curl localhost:3000/api/links/aB3xK9
 curl -X DELETE localhost:3000/api/links/aB3xK9
 # → {"code":"aB3xK9","deleted":true}
 # Unknown codes return 404 with an error message.
+
+# Create a link that expires (ISO 8601 date in the future)
+curl -X POST localhost:3000/api/shorten \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://example.com", "expiresAt": "2027-01-01T00:00:00.000Z"}'
+# → {"code":"...","shortUrl":"...","expiresAt":"2027-01-01T00:00:00.000Z"}
+# After expiry the short URL answers 410 Gone (clicks are not counted),
+# and the stats endpoint reports "expired": true. An invalid or past
+# expiresAt returns 400.
 ```
 
 Links persist in `data.json` (override with the `DATA_FILE` env var); the base URL is set with `BASE_URL`.

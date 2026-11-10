@@ -40,6 +40,10 @@ function aliasError(alias) {
   return null;
 }
 
+function isExpired(entry) {
+  return !!entry.expiresAt && Date.now() >= new Date(entry.expiresAt).getTime();
+}
+
 function send(res, status, body, type = "application/json") {
   res.writeHead(status, { "Content-Type": type });
   res.end(type === "application/json" ? JSON.stringify(body) : body);
@@ -52,8 +56,11 @@ input,button{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1p
 button{background:#58a6ff;color:#fff;font-weight:700;cursor:pointer}#out{margin-top:14px;word-break:break-all}</style></head>
 <body><form id="f"><h1>🔗 Shortly</h1><p>Paste a long URL, get a short link.</p>
 <input id="u" placeholder="https://example.com/a/very/long/link" required>
-<input id="a" placeholder="Custom alias (optional, e.g. my-link)"><button>Shorten</button><div id="out"></div></form>
+<input id="a" placeholder="Custom alias (optional, e.g. my-link)">
+<input id="e" type="datetime-local" title="Optional expiry — leave blank and the link never expires">
+<button>Shorten</button><div id="out"></div></form>
 <script>f.onsubmit=async e=>{e.preventDefault();const body={url:u.value};if(a.value.trim())body.alias=a.value.trim();
+if(e.value)body.expiresAt=new Date(e.value).toISOString();
 const r=await fetch('/api/shorten',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 const d=await r.json();out.innerHTML=d.shortUrl?('Short link: <a href="'+d.shortUrl+'" style="color:#58a6ff">'+d.shortUrl+'</a>'):(d.error||'Error');}</script>
 </body></html>`;
@@ -73,6 +80,15 @@ const server = http.createServer((req, res) => {
       let parsed;
       try { parsed = new URL(target); } catch { return send(res, 400, { error: "invalid URL" }); }
       if (!/^https?:$/.test(parsed.protocol)) return send(res, 400, { error: "only http/https URLs are allowed" });
+      // Optional expiry: an ISO 8601 date/time in the future. Expired
+      // links answer 410 Gone instead of redirecting (see below).
+      let expiresAt = null;
+      if (body.expiresAt !== undefined) {
+        const when = new Date(body.expiresAt);
+        if (isNaN(when.getTime())) return send(res, 400, { error: "expiresAt must be a valid ISO 8601 date" });
+        if (when.getTime() <= Date.now()) return send(res, 400, { error: "expiresAt must be in the future" });
+        expiresAt = when.toISOString();
+      }
       let code;
       if (body.alias !== undefined) {
         const err = aliasError(body.alias);
@@ -81,9 +97,9 @@ const server = http.createServer((req, res) => {
       } else {
         code = makeCode();
       }
-      links[code] = { url: target, clicks: 0, created: new Date().toISOString() };
+      links[code] = { url: target, clicks: 0, created: new Date().toISOString(), expiresAt };
       persist();
-      return send(res, 201, { code, shortUrl: `${BASE}/${code}` });
+      return send(res, 201, { code, shortUrl: `${BASE}/${code}`, expiresAt });
     });
     return;
   }
@@ -114,6 +130,8 @@ const server = http.createServer((req, res) => {
       shortUrl: `${BASE}/${code}`,
       clicks: entry.clicks,
       created: entry.created,
+      expiresAt: entry.expiresAt || null,
+      expired: isExpired(entry),
       lastClicked: entry.lastClicked || null,
     });
   }
@@ -121,6 +139,7 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && /^\/[A-Za-z0-9_-]{1,30}$/.test(url.pathname)) {
     const entry = links[url.pathname.slice(1)];
     if (!entry) return send(res, 404, { error: "link not found" });
+    if (isExpired(entry)) return send(res, 410, { error: "link has expired" });
     entry.clicks++;
     entry.lastClicked = new Date().toISOString();
     persist();
