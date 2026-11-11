@@ -46,8 +46,7 @@ curl -X DELETE localhost:3000/api/links/aB3xK9
 # → {"code":"aB3xK9","deleted":true}
 # Unknown codes return 404 with an error message.
 
-# Create a link that expires (ISO 8601 date in the future)
-curl -X POST localhost:3000/api/shorten \
+# Create a link that expires (ISO 8601 date in the future)curl -X POST localhost:3000/api/shorten \
   -H 'Content-Type: application/json' \
   -d '{"url": "https://example.com", "expiresAt": "2027-01-01T00:00:00.000Z"}'
 # → {"code":"...","shortUrl":"...","expiresAt":"2027-01-01T00:00:00.000Z"}
@@ -57,6 +56,12 @@ curl -X POST localhost:3000/api/shorten \
 ```
 
 Links persist in `data.json` (override with the `DATA_FILE` env var); the base URL is set with `BASE_URL`.
+
+## Limits
+
+- URLs are capped at 2048 characters (longer ones get a 400).
+- Request bodies are capped at 64 KiB (larger ones get a 413).
+- Aliases are 1–30 characters: letters, digits, `_` or `-`.
 
 ## Roadmap
 

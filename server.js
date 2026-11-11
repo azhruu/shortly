@@ -27,6 +27,12 @@ function makeCode() {
   return code;
 }
 
+/* Input hardening: a short-link request is tiny by nature, so oversized
+   bodies and absurdly long URLs are rejected up front instead of being
+   stored or parsed. */
+const MAX_BODY_BYTES = 64 * 1024;   // 64 KiB JSON body
+const MAX_URL_LENGTH = 2048;        // characters
+
 /* Custom aliases: 1-30 chars of letters, digits, _ or -. Reserved words
    (api, and anything starting with it) stay free for the API routes. */
 const ALIAS_RE = /^[A-Za-z0-9_-]{1,30}$/;
@@ -55,7 +61,7 @@ form{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:28px
 input,button{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3}
 button{background:#58a6ff;color:#fff;font-weight:700;cursor:pointer}#out{margin-top:14px;word-break:break-all}</style></head>
 <body><form id="f"><h1>🔗 Shortly</h1><p>Paste a long URL, get a short link.</p>
-<input id="u" placeholder="https://example.com/a/very/long/link" required>
+<input id="u" placeholder="https://example.com/a/very/long/link" maxlength="2048" required>
 <input id="a" placeholder="Custom alias (optional, e.g. my-link)">
 <input id="e" type="datetime-local" title="Optional expiry — leave blank and the link never expires">
 <button>Shorten</button><div id="out"></div></form>
@@ -72,11 +78,28 @@ const server = http.createServer((req, res) => {
 
   if (req.method === "POST" && url.pathname === "/api/shorten") {
     let raw = "";
-    req.on("data", (c) => (raw += c));
+    let size = 0;
+    let tooBig = false;
+    req.on("data", (c) => {
+      if (tooBig) return;
+      size += c.length;
+      if (size > MAX_BODY_BYTES) {
+        tooBig = true;
+        send(res, 413, { error: `request body must be ${MAX_BODY_BYTES} bytes or less` });
+        req.destroy();
+        return;
+      }
+      raw += c;
+    });
     req.on("end", () => {
+      if (tooBig) return;
       let body;
       try { body = JSON.parse(raw); } catch { return send(res, 400, { error: "invalid JSON body" }); }
       const target = body.url;
+      if (typeof target !== "string") return send(res, 400, { error: "url must be a string" });
+      if (target.length > MAX_URL_LENGTH) {
+        return send(res, 400, { error: `url must be ${MAX_URL_LENGTH} characters or less` });
+      }
       let parsed;
       try { parsed = new URL(target); } catch { return send(res, 400, { error: "invalid URL" }); }
       if (!/^https?:$/.test(parsed.protocol)) return send(res, 400, { error: "only http/https URLs are allowed" });
