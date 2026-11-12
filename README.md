@@ -62,6 +62,7 @@ Links persist in `data.json` (override with the `DATA_FILE` env var); the base U
 - URLs are capped at 2048 characters (longer ones get a 400).
 - Request bodies are capped at 64 KiB (larger ones get a 413).
 - Aliases are 1–30 characters: letters, digits, `_` or `-`.
+- POST /api/shorten is rate-limited to 30 requests per minute per IP (excess requests get a 429 with a `Retry-After` header).
 
 ## Roadmap
 

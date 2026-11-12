@@ -50,8 +50,35 @@ function isExpired(entry) {
   return !!entry.expiresAt && Date.now() >= new Date(entry.expiresAt).getTime();
 }
 
-function send(res, status, body, type = "application/json") {
-  res.writeHead(status, { "Content-Type": type });
+/* Rate limiting: a fixed window per IP on POST /api/shorten, so one
+   client cannot flood the store with links. 30 creates a minute is
+   plenty for a human; clients over the cap get a 429 with Retry-After. */
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;  // 1 minute
+const RATE_LIMIT_MAX = 30;               // requests per window per IP
+const rateLimits = new Map();            // ip -> { count, windowStart }
+
+function rateLimited(ip) {
+  const now = Date.now();
+  let entry = rateLimits.get(ip);
+  if (!entry || now - entry.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    entry = { count: 0, windowStart: now };
+    rateLimits.set(ip, entry);
+  }
+  // Drop entries from IPs that have gone quiet, so the map stays small.
+  if (rateLimits.size > 1000) {
+    for (const [key, value] of rateLimits) {
+      if (now - value.windowStart >= RATE_LIMIT_WINDOW_MS) rateLimits.delete(key);
+    }
+  }
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    return Math.ceil((entry.windowStart + RATE_LIMIT_WINDOW_MS - now) / 1000);
+  }
+  return 0;
+}
+
+function send(res, status, body, type = "application/json", extraHeaders = {}) {
+  res.writeHead(status, { "Content-Type": type, ...extraHeaders });
   res.end(type === "application/json" ? JSON.stringify(body) : body);
 }
 
@@ -77,6 +104,12 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && url.pathname === "/") return send(res, 200, landing, "text/html");
 
   if (req.method === "POST" && url.pathname === "/api/shorten") {
+    const retryAfter = rateLimited(req.socket.remoteAddress || "unknown");
+    if (retryAfter > 0) {
+      return send(res, 429,
+        { error: `too many requests, try again in ${retryAfter} seconds` },
+        "application/json", { "Retry-After": String(retryAfter) });
+    }
     let raw = "";
     let size = 0;
     let tooBig = false;
