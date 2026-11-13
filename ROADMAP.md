@@ -9,6 +9,6 @@ Each item lands as one complete, tested change.
 - [x] Link expiry (optional expiresAt on create, 410 after expiry)
 - [x] Input hardening: max URL length, body size limit
 - [x] Basic rate limiting per IP on POST
-- [ ] Automated endpoint tests (node:test)
+- [x] Automated endpoint tests (node:test)
 - [ ] QR code for a short link (landing page)
 - [ ] Dockerfile for one-command deployment
