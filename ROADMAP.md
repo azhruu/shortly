@@ -10,5 +10,5 @@ Each item lands as one complete, tested change.
 - [x] Input hardening: max URL length, body size limit
 - [x] Basic rate limiting per IP on POST
 - [x] Automated endpoint tests (node:test)
-- [ ] QR code for a short link (landing page)
+- [x] QR code for a short link (landing page)
 - [ ] Dockerfile for one-command deployment

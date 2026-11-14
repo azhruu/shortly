@@ -4,6 +4,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { qrSvg } = require("./qr");
 
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, "data.json");
@@ -92,10 +93,17 @@ button{background:#58a6ff;color:#fff;font-weight:700;cursor:pointer}#out{margin-
 <input id="a" placeholder="Custom alias (optional, e.g. my-link)">
 <input id="e" type="datetime-local" title="Optional expiry — leave blank and the link never expires">
 <button>Shorten</button><div id="out"></div></form>
-<script>f.onsubmit=async e=>{e.preventDefault();const body={url:u.value};if(a.value.trim())body.alias=a.value.trim();
+<script>f.onsubmit=async ev=>{ev.preventDefault();const body={url:u.value};if(a.value.trim())body.alias=a.value.trim();
 if(e.value)body.expiresAt=new Date(e.value).toISOString();
 const r=await fetch('/api/shorten',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-const d=await r.json();out.innerHTML=d.shortUrl?('Short link: <a href="'+d.shortUrl+'" style="color:#58a6ff">'+d.shortUrl+'</a>'):(d.error||'Error');}</script>
+const d=await r.json();
+if(!d.shortUrl){out.textContent=d.error||'Error';return;}
+out.innerHTML='Short link: <a href="'+d.shortUrl+'" style="color:#58a6ff">'+d.shortUrl+'</a><br><button id="qrbtn" type="button">Show QR code</button><div id="qr"></div>';
+const b=document.getElementById('qrbtn');
+b.onclick=async()=>{const q=await fetch('/api/links/'+d.code+'/qr');
+if(!q.ok){document.getElementById('qr').textContent='Could not load QR code';return;}
+document.getElementById('qr').innerHTML=await q.text()+'<br><a href="/api/links/'+d.code+'/qr" download="'+d.code+'-qr.svg" style="color:#58a6ff">Download SVG</a>';
+b.remove();};}</script>
 </body></html>`;
 
 const server = http.createServer((req, res) => {
@@ -172,6 +180,22 @@ const server = http.createServer((req, res) => {
     delete links[code];
     persist();
     return send(res, 200, { code, deleted: true });
+  }
+
+  /* QR code for a short link: an SVG generated on the fly by qr.js
+     (dependency-free, byte mode, EC level L). Unknown codes 404. */
+  if (req.method === "GET" && url.pathname.startsWith("/api/links/") &&
+      url.pathname.endsWith("/qr")) {
+    const code = decodeURIComponent(
+      url.pathname.slice("/api/links/".length, -"/qr".length));
+    const entry = links[code];
+    if (!entry || code.includes("/")) return send(res, 404, { error: "link not found" });
+    try {
+      const { svg } = qrSvg(`${BASE}/${code}`);
+      return send(res, 200, svg, "image/svg+xml");
+    } catch (err) {
+      return send(res, 400, { error: err.message });
+    }
   }
 
   /* Per-link stats: code, target URL, click count, created time and the

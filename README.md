@@ -41,6 +41,11 @@ curl localhost:3000/api/links/aB3xK9
 # → {"code":"aB3xK9","url":"https://example.com/a/very/long/link","shortUrl":"http://localhost:3000/aB3xK9","clicks":1,"created":"...","lastClicked":"..."}
 # Unknown codes return 404 with an error message.
 
+# QR code for a short link (SVG, generated locally — no external service)
+curl localhost:3000/api/links/aB3xK9/qr
+# → an <svg> QR code for the short URL, ready to print or share.
+# Unknown codes return 404 with an error message.
+
 # Delete a link (its short URL stops redirecting)
 curl -X DELETE localhost:3000/api/links/aB3xK9
 # → {"code":"aB3xK9","deleted":true}
@@ -65,7 +70,7 @@ Automated endpoint tests using only Node's built-in test runner — no dependenc
 npm test            # node --test test/*.test.js
 ```
 
-`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, listing and stats, custom aliases (including clashes), invalid input, oversized bodies, link expiry (410 after expiry), and deletes. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header.
+`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, listing and stats, custom aliases (including clashes), invalid input, oversized bodies, link expiry (410 after expiry), and deletes. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit.
 
 ## Limits
 
@@ -73,10 +78,11 @@ npm test            # node --test test/*.test.js
 - Request bodies are capped at 64 KiB (larger ones get a 413).
 - Aliases are 1–30 characters: letters, digits, `_` or `-`.
 - POST /api/shorten is rate-limited to 30 requests per minute per IP (excess requests get a 429 with a `Retry-After` header).
+- QR codes are generated locally (byte mode, EC level L, versions 1–10), so a short URL longer than 271 bytes returns a 400 from `/api/links/:code/qr`.
 
 ## Roadmap
 
-Custom aliases → per-link stats endpoint → link expiry → rate limiting → automated endpoint tests. Full plan: [ROADMAP.md](ROADMAP.md).
+Custom aliases → per-link stats endpoint → link expiry → rate limiting → automated endpoint tests → QR code for a short link. Full plan: [ROADMAP.md](ROADMAP.md).
 
 ## License
 
