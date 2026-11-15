@@ -62,6 +62,23 @@ curl -X DELETE localhost:3000/api/links/aB3xK9
 
 Links persist in `data.json` (override with the `DATA_FILE` env var); the base URL is set with `BASE_URL`.
 
+## Docker
+
+One-command deployment — no Node or npm needed on the host:
+
+```bash
+docker compose up -d    # http://localhost:3000
+```
+
+Links persist in a named volume (`shortly-data`), so they survive container restarts. Without Compose:
+
+```bash
+docker build -t shortly .
+docker run -d -p 3000:3000 -v shortly-data:/data --name shortly shortly
+```
+
+Set `BASE_URL` to the public address when deploying behind a domain (e.g. `-e BASE_URL=https://short.example.com`). The image runs as the non-root `node` user, has zero dependencies, and ships a health check on `/api/links`.
+
 ## Tests
 
 Automated endpoint tests using only Node's built-in test runner — no dependencies:
@@ -82,7 +99,7 @@ npm test            # node --test test/*.test.js
 
 ## Roadmap
 
-Custom aliases → per-link stats endpoint → link expiry → rate limiting → automated endpoint tests → QR code for a short link. Full plan: [ROADMAP.md](ROADMAP.md).
+Custom aliases → per-link stats endpoint → link expiry → rate limiting → automated endpoint tests → QR code for a short link → Dockerfile for one-command deployment. Full plan: [ROADMAP.md](ROADMAP.md).
 
 ## License
 

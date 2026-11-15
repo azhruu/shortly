@@ -1,0 +1,10 @@
+.git
+.gitignore
+data.json
+test/
+Dockerfile
+docker-compose.yml
+.dockerignore
+README.md
+ROADMAP.md
+LICENSE

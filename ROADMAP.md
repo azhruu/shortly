@@ -11,4 +11,4 @@ Each item lands as one complete, tested change.
 - [x] Basic rate limiting per IP on POST
 - [x] Automated endpoint tests (node:test)
 - [x] QR code for a short link (landing page)
-- [ ] Dockerfile for one-command deployment
+- [x] Dockerfile for one-command deployment
