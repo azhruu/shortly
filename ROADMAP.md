@@ -12,3 +12,4 @@ Each item lands as one complete, tested change.
 - [x] Automated endpoint tests (node:test)
 - [x] QR code for a short link (landing page)
 - [x] Dockerfile for one-command deployment
+- [x] Health endpoint (GET /health: status, link count, uptime) used by the Docker health check

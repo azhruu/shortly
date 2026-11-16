@@ -43,6 +43,10 @@ curl localhost:3000/api/links/aB3xK9
 
 # QR code for a short link (SVG, generated locally — no external service)
 curl localhost:3000/api/links/aB3xK9/qr
+
+# Health check (for Docker / uptime monitors — no link data involved)
+curl localhost:3000/health
+# → {"status":"ok","links":3,"uptimeSeconds":42}
 # → an <svg> QR code for the short URL, ready to print or share.
 # Unknown codes return 404 with an error message.
 
@@ -77,7 +81,7 @@ docker build -t shortly .
 docker run -d -p 3000:3000 -v shortly-data:/data --name shortly shortly
 ```
 
-Set `BASE_URL` to the public address when deploying behind a domain (e.g. `-e BASE_URL=https://short.example.com`). The image runs as the non-root `node` user, has zero dependencies, and ships a health check on `/api/links`.
+Set `BASE_URL` to the public address when deploying behind a domain (e.g. `-e BASE_URL=https://short.example.com`). The image runs as the non-root `node` user, has zero dependencies, and ships a health check on `/health`.
 
 ## Tests
 

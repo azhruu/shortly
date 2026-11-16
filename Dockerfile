@@ -18,8 +18,9 @@ USER node
 VOLUME /data
 EXPOSE 3000
 
-# The API itself is the health signal: /api/links always answers 200.
+# A dedicated health endpoint: /health answers 200 with the link
+# count and uptime, without touching the link store.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/api/links || exit 1
+  CMD wget -qO- http://127.0.0.1:3000/health || exit 1
 
 CMD ["node", "server.js"]

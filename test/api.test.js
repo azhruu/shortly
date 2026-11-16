@@ -40,6 +40,18 @@ test("GET / serves the landing page", async () => {
   assert.match(await res.text(), /Shortly/);
 });
 
+test("GET /health reports status, link count and uptime", async () => {
+  await postShorten({ url: "https://example.com/health-check" });
+  const res = await fetch(`${base}/health`);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.status, "ok");
+  assert.equal(typeof body.links, "number");
+  assert.ok(body.links >= 1);
+  assert.equal(typeof body.uptimeSeconds, "number");
+  assert.ok(body.uptimeSeconds >= 0);
+});
+
 test("POST /api/shorten creates a link and GET /:code redirects it", async () => {
   const created = await postShorten({ url: "https://example.com/a/very/long/link" });
   assert.equal(created.status, 201);

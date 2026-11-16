@@ -111,6 +111,17 @@ const server = http.createServer((req, res) => {
 
   if (req.method === "GET" && url.pathname === "/") return send(res, 200, landing, "text/html");
 
+  /* Health check: a lightweight answer for Docker / uptime monitors,
+     so they do not have to hit the link list. Reports how many links
+     are stored and how long the process has been up (whole seconds). */
+  if (req.method === "GET" && url.pathname === "/health") {
+    return send(res, 200, {
+      status: "ok",
+      links: Object.keys(links).length,
+      uptimeSeconds: Math.floor(process.uptime()),
+    });
+  }
+
   if (req.method === "POST" && url.pathname === "/api/shorten") {
     const retryAfter = rateLimited(req.socket.remoteAddress || "unknown");
     if (retryAfter > 0) {
