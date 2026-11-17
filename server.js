@@ -180,7 +180,9 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === "GET" && url.pathname === "/api/links") {
-    return send(res, 200, Object.entries(links).map(([code, v]) => ({ code, ...v })));
+    return send(res, 200, Object.entries(links).map(([code, v]) => ({
+      code, ...v, expired: isExpired(v),
+    })));
   }
 
   /* Delete a link: removes it from the store, so its short URL stops

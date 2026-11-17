@@ -147,6 +147,11 @@ test("expiry: future expiresAt is stored, expired links answer 410", async () =>
   const redirect = await fetch(`${base}/${code}`, { redirect: "manual" });
   assert.equal(redirect.status, 410);
   assert.match((await redirect.json()).error, /expired/);
+
+  // The list endpoint mirrors the stats endpoint: expired links are
+  // flagged there too, so a client can spot them without a per-link call.
+  const listed = await fetch(`${base}/api/links`).then((r) => r.json());
+  assert.equal(listed.find((l) => l.code === code).expired, true);
 });
 
 test("DELETE removes a link and its short URL stops redirecting", async () => {
