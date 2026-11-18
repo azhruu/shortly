@@ -48,7 +48,7 @@ curl localhost:3000/api/links/aB3xK9/qr
 
 # Health check (for Docker / uptime monitors — no link data involved)
 curl localhost:3000/health
-# → {"status":"ok","links":3,"uptimeSeconds":42}
+# → {"status":"ok","links":3,"expiredLinks":1,"uptimeSeconds":42}
 
 # Delete a link (its short URL stops redirecting)
 curl -X DELETE localhost:3000/api/links/aB3xK9

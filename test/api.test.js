@@ -40,14 +40,21 @@ test("GET / serves the landing page", async () => {
   assert.match(await res.text(), /Shortly/);
 });
 
-test("GET /health reports status, link count and uptime", async () => {
+test("GET /health reports status, link count, expired count and uptime", async () => {
   await postShorten({ url: "https://example.com/health-check" });
+  // A short-lived link, so the expired count has something to report.
+  const expiresAt = new Date(Date.now() + 300).toISOString();
+  const shortLived = await postShorten({ url: "https://example.com/health-expired", expiresAt });
+  assert.equal(shortLived.status, 201);
+  await new Promise((r) => setTimeout(r, 400));
+
   const res = await fetch(`${base}/health`);
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.status, "ok");
   assert.equal(typeof body.links, "number");
-  assert.ok(body.links >= 1);
+  assert.ok(body.links >= 2);
+  assert.equal(body.expiredLinks, 1);
   assert.equal(typeof body.uptimeSeconds, "number");
   assert.ok(body.uptimeSeconds >= 0);
 });

@@ -14,3 +14,4 @@ Each item lands as one complete, tested change.
 - [x] Dockerfile for one-command deployment
 - [x] Health endpoint (GET /health: status, link count, uptime) used by the Docker health check
 - [x] List endpoint reports each link's expired flag, matching the stats endpoint (polish)
+- [x] Health endpoint reports expired link count, so monitors can spot dead links without listing them (polish)

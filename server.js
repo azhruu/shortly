@@ -113,11 +113,13 @@ const server = http.createServer((req, res) => {
 
   /* Health check: a lightweight answer for Docker / uptime monitors,
      so they do not have to hit the link list. Reports how many links
-     are stored and how long the process has been up (whole seconds). */
+     are stored, how many of them have expired, and how long the
+     process has been up (whole seconds). */
   if (req.method === "GET" && url.pathname === "/health") {
     return send(res, 200, {
       status: "ok",
       links: Object.keys(links).length,
+      expiredLinks: Object.values(links).filter(isExpired).length,
       uptimeSeconds: Math.floor(process.uptime()),
     });
   }
