@@ -75,6 +75,29 @@ test("POST /api/shorten creates a link and GET /:code redirects it", async () =>
   assert.equal((await stats.json()).clicks, 1);
 });
 
+test("HEAD /:code returns redirect headers without counting a click", async () => {
+  const created = await postShorten({ url: "https://example.com/head-check" });
+  assert.equal(created.status, 201);
+  const { code } = await created.json();
+
+  const head = await fetch(`${base}/${code}`, { method: "HEAD", redirect: "manual" });
+  assert.equal(head.status, 302);
+  assert.equal(head.headers.get("location"), "https://example.com/head-check");
+  assert.equal(await head.text(), "");
+
+  // A HEAD probe is not a visit: the click count is still 0.
+  const stats = await fetch(`${base}/api/links/${code}`).then((r) => r.json());
+  assert.equal(stats.clicks, 0);
+  assert.equal(stats.lastClicked, null);
+
+  // A real GET afterwards still counts exactly one click.
+  await fetch(`${base}/${code}`, { redirect: "manual" });
+  assert.equal((await fetch(`${base}/api/links/${code}`).then((r) => r.json())).clicks, 1);
+
+  // HEAD on an unknown code is a 404, same as GET.
+  assert.equal((await fetch(`${base}/no-such-code`, { method: "HEAD", redirect: "manual" })).status, 404);
+});
+
 test("GET /api/links lists created links", async () => {
   const created = await postShorten({ url: "https://example.com/list-me" });
   const { code } = await created.json();

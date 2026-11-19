@@ -33,6 +33,9 @@ curl -X POST localhost:3000/api/shorten \
 # Use it (302 redirect, click counted)
 curl -i localhost:3000/aB3xK9
 
+# Probe it without counting a click (HEAD: same 302 headers, no body)
+curl -I localhost:3000/aB3xK9
+
 # List all links with click counts (each entry also reports "expired")
 curl localhost:3000/api/links
 
@@ -91,7 +94,7 @@ Automated endpoint tests using only Node's built-in test runner — no dependenc
 npm test            # node --test test/*.test.js
 ```
 
-`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, listing and stats, custom aliases (including clashes), invalid input, oversized bodies, link expiry (410 after expiry, with the expired flag shown in the list), and deletes. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit.
+`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, HEAD probes that return the redirect headers without counting a click, listing and stats, custom aliases (including clashes), invalid input, oversized bodies, link expiry (410 after expiry, with the expired flag shown in the list), and deletes. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit.
 
 ## Limits
 

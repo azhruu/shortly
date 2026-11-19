@@ -231,10 +231,20 @@ const server = http.createServer((req, res) => {
     });
   }
 
-  if (req.method === "GET" && /^\/[A-Za-z0-9_-]{1,30}$/.test(url.pathname)) {
+  /* Redirect a short code: GET counts a click and redirects (302).
+     HEAD answers the same 302 headers without a body and without
+     counting a click, so link previewers and uptime checkers can
+     probe a short URL without inflating its stats. Expired links
+     answer 410, unknown codes 404. */
+  if ((req.method === "GET" || req.method === "HEAD") &&
+      /^\/[A-Za-z0-9_-]{1,30}$/.test(url.pathname)) {
     const entry = links[url.pathname.slice(1)];
     if (!entry) return send(res, 404, { error: "link not found" });
     if (isExpired(entry)) return send(res, 410, { error: "link has expired" });
+    if (req.method === "HEAD") {
+      res.writeHead(302, { Location: entry.url });
+      return res.end();
+    }
     entry.clicks++;
     entry.lastClicked = new Date().toISOString();
     persist();
