@@ -58,6 +58,11 @@ curl -X DELETE localhost:3000/api/links/aB3xK9
 # → {"code":"aB3xK9","deleted":true}
 # Unknown codes return 404 with an error message.
 
+# Purge every expired link at once (live links are untouched)
+curl -X DELETE localhost:3000/api/links/expired
+# → {"deleted":2}
+# "expired" is a reserved alias, so it can never be a link code.
+
 # Create a link that expires (ISO 8601 date in the future)curl -X POST localhost:3000/api/shorten \
   -H 'Content-Type: application/json' \
   -d '{"url": "https://example.com", "expiresAt": "2027-01-01T00:00:00.000Z"}'
@@ -94,7 +99,7 @@ Automated endpoint tests using only Node's built-in test runner — no dependenc
 npm test            # node --test test/*.test.js
 ```
 
-`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, HEAD probes that return the redirect headers without counting a click, listing and stats, custom aliases (including clashes), invalid input, oversized bodies, link expiry (410 after expiry, with the expired flag shown in the list), and deletes. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit.
+`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, HEAD probes that return the redirect headers without counting a click, listing and stats, custom aliases (including clashes), invalid input, oversized bodies, link expiry (410 after expiry, with the expired flag shown in the list), deletes, and the bulk purge of expired links. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit.
 
 ## Limits
 

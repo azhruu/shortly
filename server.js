@@ -35,9 +35,11 @@ const MAX_BODY_BYTES = 64 * 1024;   // 64 KiB JSON body
 const MAX_URL_LENGTH = 2048;        // characters
 
 /* Custom aliases: 1-30 chars of letters, digits, _ or -. Reserved words
-   (api, and anything starting with it) stay free for the API routes. */
+   (api, and anything starting with it) stay free for the API routes;
+   "expired" is reserved too, so it can never clash with the bulk
+   purge endpoint DELETE /api/links/expired. */
 const ALIAS_RE = /^[A-Za-z0-9_-]{1,30}$/;
-const RESERVED = new Set(["api"]);
+const RESERVED = new Set(["api", "expired"]);
 function aliasError(alias) {
   if (typeof alias !== "string" || !ALIAS_RE.test(alias)) {
     return "alias must be 1-30 characters: letters, digits, _ or -";
@@ -185,6 +187,20 @@ const server = http.createServer((req, res) => {
     return send(res, 200, Object.entries(links).map(([code, v]) => ({
       code, ...v, expired: isExpired(v),
     })));
+  }
+
+  /* Bulk purge of expired links: removes every link past its
+     expiresAt and reports how many were dropped, so the store does
+     not fill up with dead links. Nothing expired means 0 deleted.
+     Checked before the single-link DELETE below, and "expired" is a
+     reserved alias, so this path can never be a link code. */
+  if (req.method === "DELETE" && url.pathname === "/api/links/expired") {
+    let deleted = 0;
+    for (const code of Object.keys(links)) {
+      if (isExpired(links[code])) { delete links[code]; deleted++; }
+    }
+    if (deleted > 0) persist();
+    return send(res, 200, { deleted });
   }
 
   /* Delete a link: removes it from the store, so its short URL stops

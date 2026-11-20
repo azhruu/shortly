@@ -143,6 +143,7 @@ test("invalid inputs are rejected with 400", async () => {
     [{ url: "ftp://example.com/file" }, /only http\/https/],
     [{ url: "https://example.com", alias: "bad alias!" }, /alias must be/],
     [{ url: "https://example.com", alias: "api" }, /reserved/],
+    [{ url: "https://example.com", alias: "expired" }, /reserved/],
     [{ url: "https://example.com", alias: "x".repeat(31) }, /alias must be/],
     [{ url: "https://example.com", expiresAt: "not-a-date" }, /valid ISO 8601/],
     [{ url: "https://example.com", expiresAt: "2000-01-01T00:00:00.000Z" }, /in the future/],
@@ -182,6 +183,35 @@ test("expiry: future expiresAt is stored, expired links answer 410", async () =>
   // flagged there too, so a client can spot them without a per-link call.
   const listed = await fetch(`${base}/api/links`).then((r) => r.json());
   assert.equal(listed.find((l) => l.code === code).expired, true);
+});
+
+test("DELETE /api/links/expired purges only expired links", async () => {
+  // One link that expires almost immediately, one that never does.
+  const expiresAt = new Date(Date.now() + 300).toISOString();
+  const shortLived = await postShorten({ url: "https://example.com/purge-me", expiresAt });
+  assert.equal(shortLived.status, 201);
+  const { code: doomed } = await shortLived.json();
+  const keeper = await postShorten({ url: "https://example.com/keep-me", alias: "keep-me" });
+  assert.equal(keeper.status, 201);
+  await new Promise((r) => setTimeout(r, 400));
+
+  // Earlier tests may have left their own expired links behind, so
+  // the purge count is "at least the one we just expired", not exact.
+  const purge = await fetch(`${base}/api/links/expired`, { method: "DELETE" });
+  assert.equal(purge.status, 200);
+  const { deleted } = await purge.json();
+  assert.ok(deleted >= 1);
+
+  assert.equal((await fetch(`${base}/api/links/${doomed}`)).status, 404);
+  assert.equal((await fetch(`${base}/${doomed}`, { redirect: "manual" })).status, 404);
+  // The permanent link survives the purge untouched.
+  assert.equal((await fetch(`${base}/api/links/keep-me`)).status, 200);
+  assert.equal((await fetch(`${base}/keep-me`, { redirect: "manual" })).status, 302);
+
+  // A second purge finds nothing left to drop.
+  const again = await fetch(`${base}/api/links/expired`, { method: "DELETE" });
+  assert.equal(again.status, 200);
+  assert.deepEqual(await again.json(), { deleted: 0 });
 });
 
 test("DELETE removes a link and its short URL stops redirecting", async () => {
