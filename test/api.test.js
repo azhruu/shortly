@@ -94,8 +94,22 @@ test("HEAD /:code returns redirect headers without counting a click", async () =
   await fetch(`${base}/${code}`, { redirect: "manual" });
   assert.equal((await fetch(`${base}/api/links/${code}`).then((r) => r.json())).clicks, 1);
 
-  // HEAD on an unknown code is a 404, same as GET.
-  assert.equal((await fetch(`${base}/no-such-code`, { method: "HEAD", redirect: "manual" })).status, 404);
+  // HEAD on an unknown code is a 404 with no body, same as GET.
+  const missingHead = await fetch(`${base}/no-such-code`, { method: "HEAD", redirect: "manual" });
+  assert.equal(missingHead.status, 404);
+  assert.equal(await missingHead.text(), "");
+});
+
+test("HEAD on an expired link is a 410 with no body", async () => {
+  const expiresAt = new Date(Date.now() + 300).toISOString();
+  const created = await postShorten({ url: "https://example.com/head-expired", expiresAt });
+  assert.equal(created.status, 201);
+  const { code } = await created.json();
+  await new Promise((r) => setTimeout(r, 400));
+
+  const head = await fetch(`${base}/${code}`, { method: "HEAD", redirect: "manual" });
+  assert.equal(head.status, 410);
+  assert.equal(await head.text(), "");
 });
 
 test("GET /api/links lists created links", async () => {

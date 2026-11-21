@@ -17,3 +17,4 @@ Each item lands as one complete, tested change.
 - [x] Health endpoint reports expired link count, so monitors can spot dead links without listing them (polish)
 - [x] HEAD on a short code returns the redirect headers without counting a click, so previewers can probe a link without inflating its stats (polish)
 - [x] Bulk purge of expired links (DELETE /api/links/expired, "expired" now a reserved alias) (polish)
+- [x] HEAD on a missing (404) or expired (410) code returns headers only, with no JSON body (polish)
