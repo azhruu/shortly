@@ -64,6 +64,21 @@ test("GET /api/links/:code/qr for an unknown code returns 404", async () => {
   assert.equal((await res.json()).error, "link not found");
 });
 
+test("GET /api/links/:code/qr for an expired link returns 410", async () => {
+  const expiresAt = new Date(Date.now() + 300).toISOString();
+  const res = await fetch(`${base}/api/shorten`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: "https://example.com/short-lived-qr", expiresAt }),
+  });
+  assert.equal(res.status, 201);
+  const { code } = await res.json();
+  await new Promise((r) => setTimeout(r, 400)); // let the link expire
+  const qr = await fetch(`${base}/api/links/${code}/qr`);
+  assert.equal(qr.status, 410);
+  assert.equal((await qr.json()).error, "link has expired");
+});
+
 test("landing page offers a QR code button after shortening", async () => {
   const html = await (await fetch(`${base}/`)).text();
   assert.match(html, /Show QR code/);

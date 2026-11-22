@@ -214,13 +214,16 @@ const server = http.createServer((req, res) => {
   }
 
   /* QR code for a short link: an SVG generated on the fly by qr.js
-     (dependency-free, byte mode, EC level L). Unknown codes 404. */
+     (dependency-free, byte mode, EC level L). Unknown codes 404, and
+     an expired link answers 410 — a QR code for a dead link would
+     only hand out a URL that redirects nowhere. */
   if (req.method === "GET" && url.pathname.startsWith("/api/links/") &&
       url.pathname.endsWith("/qr")) {
     const code = decodeURIComponent(
       url.pathname.slice("/api/links/".length, -"/qr".length));
     const entry = links[code];
     if (!entry || code.includes("/")) return send(res, 404, { error: "link not found" });
+    if (isExpired(entry)) return send(res, 410, { error: "link has expired" });
     try {
       const { svg } = qrSvg(`${BASE}/${code}`);
       return send(res, 200, svg, "image/svg+xml");
