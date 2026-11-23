@@ -53,6 +53,15 @@ function isExpired(entry) {
   return !!entry.expiresAt && Date.now() >= new Date(entry.expiresAt).getTime();
 }
 
+/* Link codes come from the URL path, so decode them defensively: a
+   malformed percent-escape (e.g. %zz) makes decodeURIComponent throw,
+   and an uncaught throw inside a request handler kills the whole
+   server process. Returning null lets the route answer 400 instead. */
+function safeDecode(text) {
+  try { return decodeURIComponent(text); }
+  catch { return null; }
+}
+
 /* Rate limiting: a fixed window per IP on POST /api/shorten, so one
    client cannot flood the store with links. 30 creates a minute is
    plenty for a human; clients over the cap get a 429 with Retry-After. */
@@ -206,7 +215,8 @@ const server = http.createServer((req, res) => {
   /* Delete a link: removes it from the store, so its short URL stops
      redirecting and its stats disappear. Unknown codes get a 404. */
   if (req.method === "DELETE" && url.pathname.startsWith("/api/links/")) {
-    const code = decodeURIComponent(url.pathname.slice("/api/links/".length));
+    const code = safeDecode(url.pathname.slice("/api/links/".length));
+    if (code === null) return send(res, 400, { error: "invalid URL encoding in link code" });
     if (!links[code] || code.includes("/")) return send(res, 404, { error: "link not found" });
     delete links[code];
     persist();
@@ -219,8 +229,9 @@ const server = http.createServer((req, res) => {
      only hand out a URL that redirects nowhere. */
   if (req.method === "GET" && url.pathname.startsWith("/api/links/") &&
       url.pathname.endsWith("/qr")) {
-    const code = decodeURIComponent(
+    const code = safeDecode(
       url.pathname.slice("/api/links/".length, -"/qr".length));
+    if (code === null) return send(res, 400, { error: "invalid URL encoding in link code" });
     const entry = links[code];
     if (!entry || code.includes("/")) return send(res, 404, { error: "link not found" });
     if (isExpired(entry)) return send(res, 410, { error: "link has expired" });
@@ -235,7 +246,8 @@ const server = http.createServer((req, res) => {
   /* Per-link stats: code, target URL, click count, created time and the
      time of the most recent click (null if never clicked). */
   if (req.method === "GET" && url.pathname.startsWith("/api/links/")) {
-    const code = decodeURIComponent(url.pathname.slice("/api/links/".length));
+    const code = safeDecode(url.pathname.slice("/api/links/".length));
+    if (code === null) return send(res, 400, { error: "invalid URL encoding in link code" });
     const entry = links[code];
     if (!entry || code.includes("/")) return send(res, 404, { error: "link not found" });
     return send(res, 200, {

@@ -247,3 +247,20 @@ test("unknown short code and unknown route return 404", async () => {
   assert.equal((await fetch(`${base}/no-such-code`, { redirect: "manual" })).status, 404);
   assert.equal((await fetch(`${base}/api/whatever`)).status, 404);
 });
+
+test("malformed percent-encoding in a link code returns 400 and the server stays up", async () => {
+  // %zz is not valid percent-encoding: decodeURIComponent throws on it,
+  // which used to crash the server process (uncaught URIError). Every
+  // route that decodes a code from the path must answer 400 instead.
+  for (const [path, method] of [
+    ["/api/links/%zz", "GET"],
+    ["/api/links/%zz", "DELETE"],
+    ["/api/links/%zz/qr", "GET"],
+  ]) {
+    const res = await fetch(`${base}${path}`, { method });
+    assert.equal(res.status, 400);
+    assert.match((await res.json()).error, /invalid URL encoding/);
+  }
+  // The server is still alive after the bad requests.
+  assert.equal((await fetch(`${base}/health`)).status, 200);
+});

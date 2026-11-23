@@ -19,3 +19,4 @@ Each item lands as one complete, tested change.
 - [x] Bulk purge of expired links (DELETE /api/links/expired, "expired" now a reserved alias) (polish)
 - [x] HEAD on a missing (404) or expired (410) code returns headers only, with no JSON body (polish)
 - [x] QR code for an expired link answers 410, matching the redirect instead of handing out a dead short URL (polish)
+- [x] Malformed percent-encoding in a link code (e.g. %zz) answers 400 instead of crashing the server with an uncaught URIError (polish)

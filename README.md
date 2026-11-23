@@ -42,7 +42,8 @@ curl localhost:3000/api/links
 # Stats for one link (clicks, created, last click)
 curl localhost:3000/api/links/aB3xK9
 # → {"code":"aB3xK9","url":"https://example.com/a/very/long/link","shortUrl":"http://localhost:3000/aB3xK9","clicks":1,"created":"...","lastClicked":"..."}
-# Unknown codes return 404 with an error message.
+# Unknown codes return 404 with an error message; malformed
+# percent-encoding in a code (e.g. %zz) returns 400.
 
 # QR code for a short link (SVG, generated locally — no external service)
 curl localhost:3000/api/links/aB3xK9/qr
@@ -99,7 +100,7 @@ Automated endpoint tests using only Node's built-in test runner — no dependenc
 npm test            # node --test test/*.test.js
 ```
 
-`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, HEAD probes that return the redirect headers without counting a click (and answer 404/410 with headers only for missing/expired codes), listing and stats, custom aliases (including clashes), invalid input, oversized bodies, link expiry (410 after expiry, with the expired flag shown in the list), deletes, and the bulk purge of expired links. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, 410 for expired links, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit.
+`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, HEAD probes that return the redirect headers without counting a click (and answer 404/410 with headers only for missing/expired codes), listing and stats, custom aliases (including clashes), invalid input, malformed percent-encoding in a link code (400, and the server stays up), oversized bodies, link expiry (410 after expiry, with the expired flag shown in the list), deletes, and the bulk purge of expired links. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, 410 for expired links, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit.
 
 ## Limits
 
