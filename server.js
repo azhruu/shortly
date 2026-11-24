@@ -2,6 +2,7 @@
 "use strict";
 
 const http = require("http");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { qrSvg } = require("./qr");
@@ -18,12 +19,15 @@ function load() {
 }
 function persist() { fs.writeFileSync(DATA_FILE, JSON.stringify(links, null, 2)); }
 
+/* Short codes are drawn with crypto.randomInt, not Math.random:
+   Math.random is predictable, so an attacker who saw a few codes
+   could guess the next one and enumerate other people's links. */
 function makeCode() {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code;
   do {
     code = "";
-    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    for (let i = 0; i < 6; i++) code += chars[crypto.randomInt(chars.length)];
   } while (links[code]);
   return code;
 }

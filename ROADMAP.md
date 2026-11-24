@@ -20,3 +20,4 @@ Each item lands as one complete, tested change.
 - [x] HEAD on a missing (404) or expired (410) code returns headers only, with no JSON body (polish)
 - [x] QR code for an expired link answers 410, matching the redirect instead of handing out a dead short URL (polish)
 - [x] Malformed percent-encoding in a link code (e.g. %zz) answers 400 instead of crashing the server with an uncaught URIError (polish)
+- [x] Short codes are generated with crypto.randomInt instead of Math.random, so codes are unpredictable and cannot be guessed from earlier ones (polish)
