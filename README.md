@@ -29,6 +29,8 @@ curl -X POST localhost:3000/api/shorten \
   -d '{"url": "https://example.com", "alias": "my-link"}'
 # → {"code":"my-link","shortUrl":"http://localhost:3000/my-link"}
 # A taken or invalid alias returns 409 / 400 with an error message.
+# "api", "expired" and "health" are reserved aliases — they would
+# shadow a fixed route instead of redirecting, so they are rejected.
 
 # Use it (302 redirect, click counted)
 curl -i localhost:3000/aB3xK9
@@ -63,6 +65,8 @@ curl -X DELETE localhost:3000/api/links/aB3xK9
 curl -X DELETE localhost:3000/api/links/expired
 # → {"deleted":2}
 # "expired" is a reserved alias, so it can never be a link code.
+# "health" is reserved for the same reason: it would shadow the
+# GET /health endpoint instead of redirecting.
 
 # Create a link that expires (ISO 8601 date in the future)curl -X POST localhost:3000/api/shorten \
   -H 'Content-Type: application/json' \
@@ -100,7 +104,7 @@ Automated endpoint tests using only Node's built-in test runner — no dependenc
 npm test            # node --test test/*.test.js
 ```
 
-`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, HEAD probes that return the redirect headers without counting a click (and answer 404/410 with headers only for missing/expired codes), listing and stats, custom aliases (including clashes), invalid input, malformed percent-encoding in a link code (400, and the server stays up), oversized bodies, link expiry (410 after expiry, with the expired flag shown in the list), deletes, and the bulk purge of expired links. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, 410 for expired links, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit. `test/makecode.test.js` checks the code generator directly: every code is 6 characters from the allowed alphabet and 1000 generations produce no duplicate.
+`test/api.test.js` starts the real server on an ephemeral port with a throwaway data file and covers creating links, redirects with click counting, HEAD probes that return the redirect headers without counting a click (and answer 404/410 with headers only for missing/expired codes), listing and stats, custom aliases (including clashes and reserved words), invalid input, malformed percent-encoding in a link code (400, and the server stays up), oversized bodies, link expiry (410 after expiry, with the expired flag shown in the list), deletes, and the bulk purge of expired links. `test/rate-limit.test.js` verifies the 30-per-minute cap trips on the 31st request with a 429 and a `Retry-After` header. `test/qr.test.js` covers the QR endpoint (SVG response, 404 for unknown codes, 410 for expired links, landing-page button) and the generator itself: finder/timing/dark-module layout, format information reading back as EC level L with the chosen mask, version selection, and the 271-byte limit. `test/makecode.test.js` checks the code generator directly: every code is 6 characters from the allowed alphabet and 1000 generations produce no duplicate.
 
 ## Limits
 

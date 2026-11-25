@@ -41,9 +41,12 @@ const MAX_URL_LENGTH = 2048;        // characters
 /* Custom aliases: 1-30 chars of letters, digits, _ or -. Reserved words
    (api, and anything starting with it) stay free for the API routes;
    "expired" is reserved too, so it can never clash with the bulk
-   purge endpoint DELETE /api/links/expired. */
+   purge endpoint DELETE /api/links/expired, and "health" is reserved
+   so it can never shadow the GET /health endpoint — a link created
+   with either alias would never redirect, because the fixed route
+   is matched first. */
 const ALIAS_RE = /^[A-Za-z0-9_-]{1,30}$/;
-const RESERVED = new Set(["api", "expired"]);
+const RESERVED = new Set(["api", "expired", "health"]);
 function aliasError(alias) {
   if (typeof alias !== "string" || !ALIAS_RE.test(alias)) {
     return "alias must be 1-30 characters: letters, digits, _ or -";

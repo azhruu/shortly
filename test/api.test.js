@@ -158,6 +158,7 @@ test("invalid inputs are rejected with 400", async () => {
     [{ url: "https://example.com", alias: "bad alias!" }, /alias must be/],
     [{ url: "https://example.com", alias: "api" }, /reserved/],
     [{ url: "https://example.com", alias: "expired" }, /reserved/],
+    [{ url: "https://example.com", alias: "health" }, /reserved/],
     [{ url: "https://example.com", alias: "x".repeat(31) }, /alias must be/],
     [{ url: "https://example.com", expiresAt: "not-a-date" }, /valid ISO 8601/],
     [{ url: "https://example.com", expiresAt: "2000-01-01T00:00:00.000Z" }, /in the future/],
