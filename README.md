@@ -38,7 +38,7 @@ curl -i localhost:3000/aB3xK9
 # Probe it without counting a click (HEAD: same 302 headers, no body)
 curl -I localhost:3000/aB3xK9
 
-# List all links with click counts (each entry also reports "expired")
+# List all links with click counts (each entry also reports "expired" and its "shortUrl", like the stats endpoint)
 curl localhost:3000/api/links
 
 # Stats for one link (clicks, created, last click)

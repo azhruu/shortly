@@ -22,3 +22,4 @@ Each item lands as one complete, tested change.
 - [x] Malformed percent-encoding in a link code (e.g. %zz) answers 400 instead of crashing the server with an uncaught URIError (polish)
 - [x] Short codes are generated with crypto.randomInt instead of Math.random, so codes are unpredictable and cannot be guessed from earlier ones (polish)
 - [x] "health" is a reserved alias, so a custom alias can never shadow the GET /health endpoint the way "expired" could shadow the bulk purge (polish)
+- [x] List endpoint includes each link's shortUrl, matching the stats endpoint and the create response (polish)

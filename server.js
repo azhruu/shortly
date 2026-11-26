@@ -199,9 +199,12 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  /* List endpoint: every entry carries its shortUrl, like the stats
+     endpoint and the create response do — a client listing links
+     should not have to build the URL itself from the code and BASE. */
   if (req.method === "GET" && url.pathname === "/api/links") {
     return send(res, 200, Object.entries(links).map(([code, v]) => ({
-      code, ...v, expired: isExpired(v),
+      code, ...v, shortUrl: `${BASE}/${code}`, expired: isExpired(v),
     })));
   }
 

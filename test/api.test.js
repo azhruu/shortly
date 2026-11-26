@@ -120,6 +120,11 @@ test("GET /api/links lists created links", async () => {
   const links = await res.json();
   assert.ok(Array.isArray(links));
   assert.ok(links.some((l) => l.code === code && l.url === "https://example.com/list-me"));
+  // Each list entry carries its shortUrl, like the stats endpoint does.
+  // (BASE defaults to localhost:3000, not the test server's ephemeral
+  // port, so only the code suffix is asserted here.)
+  const listed = links.find((l) => l.code === code);
+  assert.ok(listed.shortUrl.endsWith(`/${code}`));
 });
 
 test("GET /api/links/:code reports stats, unknown codes 404", async () => {
