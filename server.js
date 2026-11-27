@@ -278,6 +278,10 @@ const server = http.createServer((req, res) => {
      probe a short URL without inflating its stats — including for
      missing (404) and expired (410) codes, which previously went
      through the JSON helper and leaked a body into the HEAD reply.
+     Both answers carry Cache-Control: no-store, so a browser or proxy
+     never caches the 302 and silently skips the server on repeat
+     visits — a cached redirect would stop clicks being counted and
+     let an expired link keep working past its expiry.
      Expired links answer 410, unknown codes 404. */
   if ((req.method === "GET" || req.method === "HEAD") &&
       /^\/[A-Za-z0-9_-]{1,30}$/.test(url.pathname)) {
@@ -297,13 +301,13 @@ const server = http.createServer((req, res) => {
       return send(res, 410, { error: "link has expired" });
     }
     if (req.method === "HEAD") {
-      res.writeHead(302, { Location: entry.url });
+      res.writeHead(302, { Location: entry.url, "Cache-Control": "no-store" });
       return res.end();
     }
     entry.clicks++;
     entry.lastClicked = new Date().toISOString();
     persist();
-    res.writeHead(302, { Location: entry.url });
+    res.writeHead(302, { Location: entry.url, "Cache-Control": "no-store" });
     return res.end();
   }
 

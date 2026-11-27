@@ -23,3 +23,4 @@ Each item lands as one complete, tested change.
 - [x] Short codes are generated with crypto.randomInt instead of Math.random, so codes are unpredictable and cannot be guessed from earlier ones (polish)
 - [x] "health" is a reserved alias, so a custom alias can never shadow the GET /health endpoint the way "expired" could shadow the bulk purge (polish)
 - [x] List endpoint includes each link's shortUrl, matching the stats endpoint and the create response (polish)
+- [x] Redirects send Cache-Control: no-store, so a browser or proxy can never cache the 302 and silently skip click counting or expiry checks (polish)

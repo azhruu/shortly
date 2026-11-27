@@ -70,6 +70,10 @@ test("POST /api/shorten creates a link and GET /:code redirects it", async () =>
   const redirect = await fetch(`${base}/${body.code}`, { redirect: "manual" });
   assert.equal(redirect.status, 302);
   assert.equal(redirect.headers.get("location"), "https://example.com/a/very/long/link");
+  // A cached 302 would skip the server on repeat visits, so redirects
+  // must never be cached: clicks would stop counting and expiry checks
+  // would stop running.
+  assert.equal(redirect.headers.get("cache-control"), "no-store");
 
   const stats = await fetch(`${base}/api/links/${body.code}`);
   assert.equal((await stats.json()).clicks, 1);
@@ -83,6 +87,7 @@ test("HEAD /:code returns redirect headers without counting a click", async () =
   const head = await fetch(`${base}/${code}`, { method: "HEAD", redirect: "manual" });
   assert.equal(head.status, 302);
   assert.equal(head.headers.get("location"), "https://example.com/head-check");
+  assert.equal(head.headers.get("cache-control"), "no-store");
   assert.equal(await head.text(), "");
 
   // A HEAD probe is not a visit: the click count is still 0.
