@@ -201,11 +201,19 @@ const server = http.createServer((req, res) => {
 
   /* List endpoint: every entry carries its shortUrl, like the stats
      endpoint and the create response do — a client listing links
-     should not have to build the URL itself from the code and BASE. */
+     should not have to build the URL itself from the code and BASE.
+     An optional ?expired=true|false filter lists only dead or only
+     live links, so a monitor can find the expired ones without
+     fetching and sifting the whole store; any other value is a 400. */
   if (req.method === "GET" && url.pathname === "/api/links") {
+    const filter = url.searchParams.get("expired");
+    if (filter !== null && filter !== "true" && filter !== "false") {
+      return send(res, 400, { error: "expired filter must be true or false" });
+    }
+    const wantExpired = filter === null ? null : filter === "true";
     return send(res, 200, Object.entries(links).map(([code, v]) => ({
       code, ...v, shortUrl: `${BASE}/${code}`, expired: isExpired(v),
-    })));
+    })).filter((entry) => wantExpired === null || entry.expired === wantExpired));
   }
 
   /* Bulk purge of expired links: removes every link past its

@@ -132,6 +132,34 @@ test("GET /api/links lists created links", async () => {
   assert.ok(listed.shortUrl.endsWith(`/${code}`));
 });
 
+test("GET /api/links?expired= filters the list to dead or live links", async () => {
+  // One link that expires almost immediately, one that never does.
+  const expiresAt = new Date(Date.now() + 300).toISOString();
+  const shortLived = await postShorten({ url: "https://example.com/filter-me", expiresAt });
+  assert.equal(shortLived.status, 201);
+  const { code: doomed } = await shortLived.json();
+  const keeper = await postShorten({ url: "https://example.com/filter-keep", alias: "filter-keep" });
+  assert.equal(keeper.status, 201);
+  await new Promise((r) => setTimeout(r, 400));
+
+  // ?expired=true lists the dead one and hides the live one.
+  const dead = await fetch(`${base}/api/links?expired=true`).then((r) => r.json());
+  assert.ok(dead.some((l) => l.code === doomed && l.expired === true));
+  assert.ok(!dead.some((l) => l.code === "filter-keep"));
+  // ?expired=false does the opposite.
+  const live = await fetch(`${base}/api/links?expired=false`).then((r) => r.json());
+  assert.ok(live.some((l) => l.code === "filter-keep" && l.expired === false));
+  assert.ok(!live.some((l) => l.code === doomed));
+  // No filter still lists both.
+  const all = await fetch(`${base}/api/links`).then((r) => r.json());
+  assert.ok(all.some((l) => l.code === doomed));
+  assert.ok(all.some((l) => l.code === "filter-keep"));
+  // Anything else is a 400.
+  const bad = await fetch(`${base}/api/links?expired=maybe`);
+  assert.equal(bad.status, 400);
+  assert.match((await bad.json()).error, /true or false/);
+});
+
 test("GET /api/links/:code reports stats, unknown codes 404", async () => {
   const created = await postShorten({ url: "https://example.com/stats-me" });
   const { code } = await created.json();
